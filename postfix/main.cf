@@ -47,8 +47,8 @@ soft_bounce = no
 
 
 # Confs:
-#myhostname = rot01c1.mail.alog.com.br
-mydomain = mail.alog.com.br
+#myhostname = 
+mydomain = 
 myorigin = $mydomain
 #mydestination = $myhostname, localhost.$mydomain, localhost, $mydomain, mail.$mydomain
 # p poder receber para @spamreport
@@ -124,8 +124,7 @@ smtpd_recipient_limit = 50
 
 # Rates:
 smtpd_client_connection_count_limit = 5
-smtpd_client_event_limit_exceptions = $mynetworks, 200.219.210.0/24, 200.143.177.60, 177.126.164.88
-
+smtpd_client_event_limit_exceptions = $mynetworks
 anvil_rate_time_unit = 5s
 smtpd_client_connection_rate_limit = 100
 smtpd_client_message_rate_limit = 200
@@ -137,13 +136,12 @@ smtpd_client_recipient_rate_limit = 500
 #smtpd_client_recipient_rate_limit = 500
 
 # Checks names used in mysql not recognized by default
-smtpd_restriction_classes = check_spf, check_dnsbl_spamhaus, check_dnsbl_spamcop, check_dnsbl_sorbs, check_wblist, check_rhsbl_rfc-ignorant, check_dnsbl_nerddk_china, check_dnsbl_alog
+smtpd_restriction_classes = check_spf, check_dnsbl_spamhaus, check_dnsbl_spamcop, check_dnsbl_sorbs, check_wblist, check_rhsbl_rfc-ignorant, check_dnsbl_nerddk_china
 check_spf = check_policy_service unix:private/policy-spf
 check_dnsbl_nerddk_china = reject_rbl_client cn.countries.nerd.dk
 check_dnsbl_spamhaus = reject_rbl_client zen.spamhaus.org
 check_dnsbl_spamcop  = reject_rbl_client bl.spamcop.net
 check_dnsbl_sorbs    = reject_rbl_client dnsbl.sorbs.net
-check_dnsbl_alog     = reject_rbl_client dnsbl.alog.com.br
 check_wblist         = check_policy_service unix:private/policy-wblist
 check_rhsbl_rfc-ignorant = reject_rhsbl_sender dsn.rfc-ignorant.org
 # Restrictions:
@@ -163,7 +161,6 @@ smtpd_client_restrictions =
                                 #permit_mynetworks,
                                 permit_sasl_authenticated,
                                 check_recipient_access mysql:/etc/postfix/maps/mysql/mysql_smtpd_client_restrictions.cf,
-                                check_dnsbl_alog,
                                 #reject_unknown_client_hostname,
                                 #reject_unknown_reverse_client_hostname,
 
