@@ -1,0 +1,285 @@
+# Maps:
+mail_name = LSOS-MTA
+mail_version = 3.0.0
+syslog_name = postfix
+config_directory = /etc/postfix
+local_recipient_maps = unix:passwd.byname $alias_maps
+alias_maps =           hash:/etc/postfix/aliases
+alias_database =       hash:/etc/postfix/aliases
+transport_maps =
+        proxy:mysql:/etc/postfix/maps/mysql/mysql_mailbox_transport_maps.cf,
+        #proxy:mysql:/etc/postfix/maps/mysql/mysql_domain_transport_maps.cf,
+        hash:/etc/postfix/maps/transport,
+        hash:/etc/postfix/maps/transport.autoreply
+sender_canonical_maps = hash:/etc/postfix/maps/canonical
+recipient_canonical_maps = pcre:/etc/postfix/maps/canonical
+local_header_rewrite_clients = static:all
+recipient_delimiter = +
+
+# Done by aliases:
+sender_bcc_maps =
+        proxy:mysql:/etc/postfix/maps/mysql/mysql_sender_bcc_maps.cf,
+        proxy:mysql:/etc/postfix/maps/mysql/mysql_domain_bcc_maps.cf
+recipient_bcc_maps =
+        proxy:mysql:/etc/postfix/maps/mysql/mysql_recipient_bcc_maps.cf,
+        proxy:mysql:/etc/postfix/maps/mysql/mysql_domain_bcc_maps.cf
+
+# Paths & users
+mail_owner = postfix
+setgid_group = postdrop
+default_privs = nobody
+queue_directory = /var/spool/postfix
+mail_spool_directory = /var/mail
+command_directory = /usr/sbin
+#daemon_directory = //usr/lib64/postfix
+sendmail_path = /usr/sbin/sendmail
+newaliases_path = /usr/bin/newaliases
+mailq_path = /usr/bin/mailq
+home_mailbox =      .maildir/
+html_directory = no
+manpage_directory = /dev/null
+sample_directory = no
+readme_directory = no
+
+
+
+soft_bounce = no
+
+
+# Confs:
+#myhostname = rot01c1.mail.alog.com.br
+mydomain = mail.alog.com.br
+myorigin = $mydomain
+#mydestination = $myhostname, localhost.$mydomain, localhost, $mydomain, mail.$mydomain
+# p poder receber para @spamreport
+mydestination = $myhostname, spamreport
+append_at_myorigin = no
+mynetworks = /etc/postfix/mynetworks
+in_flow_delay = 1s
+daemon_timeout = 1h
+#relay_domains = hash:/etc/postfix/maps/transport, proxy:mysql:/etc/postfix/maps/mysql/mysql_relay_domains_maps.cf
+relayhost =
+#relay_recipient_maps = hash:/etc/postfix/relay_recipients
+
+unknown_local_recipient_reject_code = 550
+
+#mailbox_command = /some/where/procmail
+#mailbox_transport = cyrus
+#fallback_transport = lmtp:unix:/file/name
+
+# Checks:
+header_checks = pcre:/etc/postfix/checks/header_checks
+nested_header_checks = pcre:/etc/postfix/checks/nested_header_checks
+mime_header_checks = pcre:/etc/postfix/checks/mime_header_checks
+body_checks = pcre:/etc/postfix/checks/body_checks
+body_checks_size_limit = 100000
+
+# concurrency lmit:
+# Amavis: max 100 - DO NOT GO OVER THAT
+smtp-amavis_destination_concurrency_limit = 90
+local_destination_concurrency_limit = 5
+default_destination_concurrency_limit = 5
+smtp_destination_concurrency_limit = 5
+lmtp_destination_concurrency_limit = 5
+relay_destination_concurrency_limit = 5
+
+debug_peer_level = 2
+#debug_peer_list = list of ip os domains or hosts to apply debug_peer_level
+
+
+
+# Tratamento das mensagens:
+default_destination_recipient_limit = 50
+smtp-amavis_destination_recipient_limit = 1
+lmtp_destination_recipient_limit = 1
+vacation_destination_recipient_limit = 1
+local_destination_recipient_limit = 50
+smtp_destination_recipient_limit = 50
+relay_destination_recipient_limit = 50
+message_size_limit = 50000000
+mailbox_size_limit = 512000000
+
+content_filter = smtp-amavis:[127.0.0.1]:10024
+
+# Queue:
+queue_minfree = 1000000000
+maximal_queue_lifetime = 6h
+delay_warning_time = 2h
+bounce_queue_lifetime = 1h
+queue_run_delay = 10m
+minimal_backoff_time = 10m
+maximal_backoff_time = 1h
+
+# SMTPD:
+smtpd_banner = $myhostname ESMTP
+strict_rfc821_envelopes = yes
+smtpd_helo_required = yes
+disable_vrfy_command = yes
+smtpd_forbidden_commands = CONNECT GET POST VRFY ETRN
+smtpd_timeout = 60s
+smtpd_error_sleep_time = 0s
+smtpd_soft_error_limit = 1
+smtpd_hard_error_limit = 2
+smtpd_recipient_limit = 50
+
+# Rates:
+smtpd_client_connection_count_limit = 5
+smtpd_client_event_limit_exceptions = $mynetworks, 200.219.210.0/24, 200.143.177.60, 177.126.164.88
+
+anvil_rate_time_unit = 5s
+smtpd_client_connection_rate_limit = 100
+smtpd_client_message_rate_limit = 200
+smtpd_client_recipient_rate_limit = 500
+
+#anvil_rate_time_unit = 60s
+#smtpd_client_connection_rate_limit = 200
+#smtpd_client_message_rate_limit = 300
+#smtpd_client_recipient_rate_limit = 500
+
+# Checks names used in mysql not recognized by default
+smtpd_restriction_classes = check_spf, check_dnsbl_spamhaus, check_dnsbl_spamcop, check_dnsbl_sorbs, check_wblist, check_rhsbl_rfc-ignorant, check_dnsbl_nerddk_china, check_dnsbl_alog
+check_spf = check_policy_service unix:private/policy-spf
+check_dnsbl_nerddk_china = reject_rbl_client cn.countries.nerd.dk
+check_dnsbl_spamhaus = reject_rbl_client zen.spamhaus.org
+check_dnsbl_spamcop  = reject_rbl_client bl.spamcop.net
+check_dnsbl_sorbs    = reject_rbl_client dnsbl.sorbs.net
+check_dnsbl_alog     = reject_rbl_client dnsbl.alog.com.br
+check_wblist         = check_policy_service unix:private/policy-wblist
+check_rhsbl_rfc-ignorant = reject_rhsbl_sender dsn.rfc-ignorant.org
+# Restrictions:
+smtpd_delay_reject = yes
+smtpd_delay_open_until_valid_rcpt = yes
+#smtpd_reject_footer = Email from $client_address rejected by $server_name at $localtime (UTC). Please see the reason above.
+
+# Note for spamhaus lists:
+# sbl: IPs confirmed to send spam
+# xbl: data from cbl.abuseat.org AND njabl.org
+# pbl: list of end-user dynamic IPs
+# zen: combines them ALL, do not query any other if you use zen
+
+# colocar o wblist ANTES de tudo
+smtpd_client_restrictions =
+                                #check_policy_service unix:private/policy-wblist,
+                                #permit_mynetworks,
+                                permit_sasl_authenticated,
+                                check_recipient_access mysql:/etc/postfix/maps/mysql/mysql_smtpd_client_restrictions.cf,
+                                check_dnsbl_alog,
+                                #reject_unknown_client_hostname,
+                                #reject_unknown_reverse_client_hostname,
+
+
+smtpd_helo_restrictions =
+                                #check_policy_service unix:private/policy-wblist,
+                                #permit_mynetworks,
+                                #permit_sasl_authenticated,
+                                check_recipient_access mysql:/etc/postfix/maps/mysql/mysql_smtpd_helo_restrictions.cf,
+                                #reject_invalid_helo_hostname,
+                                #reject_non_fqdn_helo_hostname,
+                                #reject_unknown_helo_hostname,
+
+smtpd_sender_restrictions =
+                                #permit_mynetworks,
+                                #reject_non_fqdn_sender,
+                                #reject_unknown_sender_domain,
+                                #reject_sender_login_mismatch,
+                                #check_policy_service unix:private/policy-wblist,
+                                #permit_sasl_authenticated,
+                                check_recipient_access mysql:/etc/postfix/maps/mysql/mysql_smtpd_sender_restrictions.cf,
+                                reject_non_fqdn_sender,
+                                reject_unknown_sender_domain,
+                                reject_authenticated_sender_login_mismatch,
+                                #check_policy_service inet:127.0.0.1:10030,
+                                #check_policy_service inet:127.0.0.1:12525,
+
+smtpd_recipient_restrictions =
+                                check_policy_service unix:private/policy-wblist-signer,
+                                reject_unknown_recipient_domain,
+                                permit_mynetworks,
+                                permit_sasl_authenticated,
+                                reject_unauth_destination,
+                                #check_policy_service unix:private/policy-wblist-signer,
+                                #reject_unverified_recipient,
+                                #check_policy_service unix:private/policy-vrfy,
+smtpd_relay_restrictions =
+smtpd_discard_ehlo_keywords = etrn, pipelining, enhancedstatuscodes
+smtpd_etrn_restrictions = reject
+smtpd_data_restrictions = reject_unauth_pipelining, reject_multi_recipient_bounce
+#smtpd_end_of_data_restrictions =
+
+##############################################################
+# smtp client stuff:
+smtp_helo_timeout = 60
+smtp_connect_timeout = 30
+smtp_address_preference = ipv4
+
+##############################################################
+# Auth Stuff:
+broken_sasl_auth_clients = yes
+smtpd_sasl_auth_enable = yes
+smtpd_tls_auth_only = no
+smtpd_sasl_local_domain =
+smtpd_sasl_security_options = noanonymous
+smtpd_sasl_authenticated_header = yes
+smtpd_sasl_type = dovecot
+smtpd_sasl_path = private/auth
+
+##############################################################
+# TLS
+smtpd_use_tls = yes
+smtpd_tls_key_file = /etc/postfix/tls/mailkey.pem
+smtpd_tls_cert_file = /etc/postfix/tls/mail_signed_cert.pem
+smtpd_tls_CAfile = /etc/postfix/tls/cacert.pem
+smtpd_tls_loglevel = 1
+
+smtp_use_tls = yes
+smtp_tls_key_file = /etc/postfix/tls/mailkey.pem
+smtp_tls_cert_file = /etc/postfix/tls/mail_signed_cert.pem
+smtp_tls_CAfile = /etc/postfix/tls/cacert.pem
+smtp_tls_loglevel = 1
+smtp_tls_protocols = !SSLv2, !TLSv1.2, !TLSv1.1
+
+
+
+##############################################################
+## Virtual
+enable_original_recipient = no
+smtpd_sender_login_maps = mysql:/etc/postfix/maps/mysql/mysql_virtual_alias_maps.cf
+virtual_alias_maps =
+        proxy:mysql:/etc/postfix/maps/mysql/mysql_virtual_alias_maps.cf,
+        proxy:mysql:/etc/postfix/maps/mysql/mysql_virtual_alias_domain_maps.cf,
+        proxy:mysql:/etc/postfix/maps/mysql/mysql_virtual_alias_domain_catchall_maps.cf
+
+virtual_gid_maps = static:1002
+virtual_mailbox_base = /var/spool/mail
+virtual_mailbox_domains = proxy:mysql:/etc/postfix/maps/mysql/mysql_virtual_domains_maps.cf
+virtual_mailbox_limit = 60000000
+virtual_mailbox_maps =
+        proxy:mysql:/etc/postfix/maps/mysql/mysql_virtual_mailbox_maps.cf,
+        proxy:mysql:/etc/postfix/maps/mysql/mysql_virtual_alias_domain_mailbox_maps.cf
+
+virtual_minimum_uid = 1001
+#virtual_transport = dovecot
+#virtual_transport = virtual
+virtual_uid_maps = static:1001
+## Additional for quota support
+virtual_maildir_extended = yes
+virtual_mailbox_limit_maps = mysql:/etc/postfix/maps/mysql/mysql_virtual_mailbox_limit_maps.cf
+virtual_mailbox_limit_override = yes
+virtual_maildir_limit_message = Sorry, the user's maildir has overdrawn his diskspace quota, please try again later.
+virtual_overquota_bounce = yes
+
+
+unknown_address_reject_code = 550
+unknown_client_reject_code = 550
+unknown_hostname_reject_code = 550
+unverified_recipient_reject_code = 550
+unverified_sender_reject_code = 550
+
+data_directory = /var/lib/postfix
+enable_long_queue_ids = yes
+
+###
+#lmtp_skip_quit_response = yes
+#lmtp_connect_timeout = 10s
+#lmtp_data_done_timeout = 30s
+
